@@ -6,6 +6,7 @@
 #include "core/helpers.hpp"
 #include "core/Log.h"
 
+
 CelestialBody::CelestialBody(bonobo::mesh_data const& shape,
                              GLuint const* program,
                              GLuint diffuse_texture_id)
@@ -26,9 +27,43 @@ glm::mat4 CelestialBody::render(std::chrono::microseconds elapsed_time,
 	// milliseconds, the following would have been used:
 	// auto const elapsed_time_ms = std::chrono::duration<float, std::milli>(elapsed_time).count();
 
-	_body.spin.rotation_angle = -glm::half_pi<float>() / 2.0f;
+	_body.spin.rotation_angle = _body.spin.rotation_angle+_body.spin.speed*elapsed_time_s;
+	_body.orbit.rotation_angle = _body.orbit.rotation_angle + _body.orbit.speed * elapsed_time_s;
+	//Create the orbital axis.
+	glm::vec3 orbital_axis = glm::vec3(_body.orbit.radius, 0, 0);
+	glm::vec3 xaxis = glm::vec3(1, 0, 0);
+	//Creating the y-axis
+	glm::vec3 yaxis = glm::vec3(0, 1, 0);
 
-	glm::mat4 world = parent_transform;
+	//Computing the rotation matrix around the y-axis
+	glm::mat4 rotation_y = glm::rotate(glm::mat4(1.0f), _body.spin.rotation_angle,yaxis);
+
+	//Creating the z-axis
+	glm::vec3 zaxis = glm::vec3(0, 0, 1);
+	//Computing the rotation matrix around the z-axis.
+	glm::mat4 rotation_z = glm::rotate(glm::mat4(1.0f), _body.spin.axial_tilt, zaxis);
+
+	//Compute the rotation matrix. Z-rotation matrix comes before the y-rotation matrix
+	//because the planet spins around the tilted z-axis.
+	glm::mat4 rotation_matrix = rotation_z * rotation_y;
+
+	//Compute the translation matrix.
+	glm::mat4 translation_matrix = glm::translate(glm::mat4(1.0f), orbital_axis);
+
+	//Compute the rotation matrix  for the orbital axis.
+	glm::mat4 rotation_orbit_axis = glm::rotate(glm::mat4(1.0f), _body.orbit.rotation_angle, yaxis);
+
+	//Computing the orbital rotation.
+	glm::mat4 orbital_rotation = rotation_orbit_axis * translation_matrix;
+
+	//Computing orbital tilt.
+	glm::mat4 orbital_tilt = glm::rotate(glm::mat4(1.0f), _body.orbit.inclination, zaxis)*translation_matrix;
+	//Computing the scaling matrix.
+	glm::mat4 scaling_matrix = glm::scale(glm::mat4(1.0f), _body.scale);
+	glm::mat4 world = parent_transform*orbital_rotation*orbital_tilt*rotation_matrix;
+	//These are the transforms applied to the children of the current node. The parent transforms of the previous node,
+	//the orbital rotation, orbital tilt and the spin tilt in the z-axis is what should be returned to the children of this node.
+	glm::mat4 children_matrix = parent_transform * orbital_rotation * orbital_tilt * rotation_z;
 
 	if (show_basis)
 	{
@@ -43,7 +78,7 @@ glm::mat4 CelestialBody::render(std::chrono::microseconds elapsed_time,
 	// world matrix.
 	_body.node.render(view_projection, world);
 
-	return parent_transform;
+	return children_matrix;
 }
 
 void CelestialBody::add_child(CelestialBody* child)

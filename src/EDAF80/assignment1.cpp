@@ -11,7 +11,57 @@
 
 #include <clocale>
 #include <cstdlib>
+#include <stack>
 
+struct CelestialBodyRef
+{
+	CelestialBody* body;
+	glm::mat4 parent_transform;
+};
+
+//CelestialBodyRef createCelestialBody(CelestialBody* cbody, glm::mat4 parent_transform2) {
+//	CelestialBodyRef g;
+//	g.body = cbody;
+//	g.parent_transform = parent_transform2;
+//	return g;
+//}
+
+void renderBody(CelestialBody &planet,std::stack<CelestialBodyRef*> system,std::chrono::microseconds delay_time,glm::mat4 world_to_clip,bool show_the_basis) {
+	if (planet.get_children().size() > 0) {
+		CelestialBodyRef cbody_ref = *system.top();
+		glm::mat4 cbody_transform = cbody_ref.parent_transform;
+		glm::mat4 parent_matrix = planet.render(delay_time, world_to_clip, cbody_transform, show_the_basis);
+		std::vector<CelestialBody*> children = planet.get_children();
+		system.pop();
+		for (CelestialBody* i :children) {
+			CelestialBodyRef* planet_ref = new CelestialBodyRef;
+			planet_ref->parent_transform = parent_matrix;
+			system.push(planet_ref);
+			CelestialBody child = *i;
+			renderBody(child, system, delay_time, world_to_clip, show_the_basis);
+		}
+	}
+	else {
+		CelestialBodyRef cbody_ref = *system.top();
+		glm::mat4 cbody_transform = cbody_ref.parent_transform;
+		glm::mat4 parent_matrix = planet.render(delay_time, world_to_clip, cbody_transform, show_the_basis);
+	}
+	//CelestialBodyRef *cbody_ref = *system.top();
+	//CelestialBody cbody = *cbody_ref.body;
+	//glm::mat4 cbody_transform = cbody_ref.parent_transform;
+	//earth.render(animation_delta_time_us, camera.GetWorldToClipMatrix(), cbody_transform, show_basis);
+//	CelestialBodyRef cbody_ref = system.top();
+	//CelestialBody cbody = *cbody_ref.body;
+	//glm::mat4 parent_matrix=cbody.render(delay_time, world_to_clip,cbody_ref.parent_transform, show_the_basis);
+	//system.pop();
+	//if (!system.empty()) {
+		//CelestialBodyRef cbody_ref = system.top();
+		//system.pop();
+		//return;
+
+	//}
+	//return cbody_ref;
+}
 
 int main()
 {
@@ -241,18 +291,61 @@ int main()
 		//
 		// Traverse the scene graph and render all nodes
 		//
-		struct CelestialBodyRef
-		{
-			CelestialBody* body;
-			glm::mat4 parent_transform;
-		};
+		//struct CelestialBodyRef
+		//{
+			//CelestialBody* body;
+			//glm::mat4 parent_transform;
+		//};
+
+
 		// TODO: Replace this explicit rendering of the Earth and Moon
 		// with a traversal of the scene graph and rendering of all its
 		// nodes.
-		earth.render(animation_delta_time_us, camera.GetWorldToClipMatrix(), glm::translate(glm::mat4(1.0f), glm::vec3(2.0f, 0.0f, 0.0f)), show_basis);
-		//moon.render(animation_delta_time_us, camera.GetWorldToClipMatrix(), glm::mat4(1.0f), show_basis);
+		//earth.add_child(&moon);
+		//moon.add_child(&sun);
+		//std::stack<CelestialBodyRef> solar_system_stack;
+		//CelestialBodyRef earth_ref;
+		//earth_ref.body = &earth;
+		//earth_ref.parent_transform = glm::translate(glm::mat4(1.0f),glm::vec3(2.0f, 0.0f, 0.0f));
+		//solar_system_stack.push(earth_ref);
+		//if(!solar_system_stack.empty()) {
+		//CelestialBodyRef cbody_ref = solar_system_stack.top();
+		//CelestialBody cbody = *cbody_ref.body;
+		//glm::mat4 parent_matrix=cbody.render(animation_delta_time_us, camera.GetWorldToClipMatrix(),cbody_ref.parent_transform, show_basis);
+		//solar_system_stack.pop();
+		//std::vector < CelestialBody* > children = cbody.get_children();
+			//for (CelestialBody* body2:children) {
+				//solar_system_stack.push(createCelestialBody(body2, parent_matrix));
+			//}
 
+		//}
+		//earth.add_child(&moon);
+		//earth.add_child(&sun);
+		//glm::mat4 child_matrix_earth = earth.render(animation_delta_time_us, camera.GetWorldToClipMatrix(), glm::translate(glm::mat4(1.0f), glm::vec3(2.0f, 0.0f, 0.0f)), show_basis);
+		//moon.render(animation_delta_time_us, camera.GetWorldToClipMatrix(), child_matrix_earth, show_basis);
 
+		std::stack<CelestialBodyRef*> solar_system_stack;
+		CelestialBodyRef *earth_ref=new CelestialBodyRef;
+		//earth_ref->body=&earth;
+		earth_ref->parent_transform = glm::translate(glm::mat4(1.0f),glm::vec3(2.0f, 0.0f, 0.0f));
+		//earth.render(animation_delta_time_us, camera.GetWorldToClipMatrix(), glm::translate(glm::mat4(1.0f), glm::vec3(2.0f, 0.0f, 0.0f)), show_basis);
+		solar_system_stack.push(earth_ref);
+		renderBody(earth,solar_system_stack, animation_delta_time_us, camera.GetWorldToClipMatrix(), show_basis);
+		delete earth_ref;
+
+		//if (!solar_system_stack.empty()) {
+			//std::vector<CelestialBody*> children =earth.get_children();
+			//CelestialBody child =*children[0];
+			//CelestialBodyRef cbody_ref = *solar_system_stack.top();
+			//glm::mat4 cbody_transform = cbody_ref.parent_transform;
+			//glm::mat4 parent_matrix = earth.render(animation_delta_time_us, camera.GetWorldToClipMatrix(), cbody_transform, show_basis);
+			//child.render(animation_delta_time_us, camera.GetWorldToClipMatrix(), parent_matrix, show_basis);
+			
+		//	glm::mat4 parent_matrix = cbody.render(animation_delta_time_us, camera.GetWorldToClipMatrix(), glm::translate(glm::mat4(1.0f), glm::vec3(2.0f, 0.0f, 0.0f)), show_basis);
+		//	solar_system_stack.pop();
+		//}
+		//CelestialBodyRef cbody_ref = solar_system_stack.top();
+		//CelestialBody cbody = *cbody_ref.body;
 		//
 		// Add controls to the scene.
 		//
