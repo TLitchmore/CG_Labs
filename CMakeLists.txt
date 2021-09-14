@@ -104,6 +104,7 @@ endif ()
 # inherit its configuration such as C++ standard version and additional C++
 # flags.
 add_library (CG_Labs_options INTERFACE)
+<<<<<<< HEAD
 #target_compile_definitions(
 #	CG_Labs_options
 #	INTERFACE
@@ -114,6 +115,18 @@ add_library (CG_Labs_options INTERFACE)
 #	INTERFACE
 #		$<$<COMPILE_LANG_AND_ID:CXX,MSVC>:/utf-8;/Zc:__cplusplus>
 #)
+=======
+target_compile_definitions(
+	CG_Labs_options
+	INTERFACE
+		$<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CXX_COMPILER_ID:MSVC>>:NOMINMAX>
+)
+target_compile_options (
+	CG_Labs_options
+	INTERFACE
+		$<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CXX_COMPILER_ID:MSVC>>:/utf-8;/Zc:__cplusplus>
+)
+>>>>>>> 15e2a2b36314935b2bcaebcd8361847959d78d1b
 target_compile_features (CG_Labs_options INTERFACE cxx_std_14)
 
 
